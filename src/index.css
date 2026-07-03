@@ -1,0 +1,117 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ==================================================================
+ * OnCourts — accessible government system (eCourts-native).
+ * White surfaces · eCourts teal · high-contrast cool neutrals.
+ * Noto Sans (UI) / Noto Sans Mono (diagnostic codes only).
+ * Bad-monitor friendly: no faint-grey text, visible borders,
+ * status by label + position, never colour alone.
+ * ================================================================== */
+
+@layer base {
+  :root {
+    --background: 210 22% 97%;       /* faint cool page */
+    --foreground: 215 28% 14%;       /* near-black cool ink */
+    --card: 0 0% 100%;               /* white surface */
+    --card-foreground: 215 28% 14%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 28% 14%;
+    --primary: 182 62% 26%;          /* eCourts teal — AA on white */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 20% 94%;
+    --secondary-foreground: 215 28% 16%;
+    --muted: 210 20% 95%;
+    --muted-foreground: 215 16% 34%; /* ≈8:1 on white — content-grade */
+    --accent: 180 38% 94%;           /* teal tint (hover/selected) */
+    --accent-foreground: 182 62% 22%;
+    --destructive: 0 65% 42%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 214 19% 84%;           /* visible hairline */
+    --border-strong: 214 17% 74%;    /* emphasis divider */
+    --input: 214 19% 80%;
+    --ring: 182 62% 30%;             /* teal focus */
+    --radius: 0.5rem;
+
+    /* Status — { base text · soft fill · hairline }, AA-contrast text */
+    --st-live: 158 64% 24%;     --st-live-bg: 150 52% 94%;     --st-live-bd: 150 40% 78%;
+    --st-unstable: 28 78% 31%;  --st-unstable-bg: 40 90% 92%;  --st-unstable-bd: 38 78% 76%;
+    --st-down: 0 68% 40%;       --st-down-bg: 0 78% 96%;       --st-down-bd: 0 62% 85%;
+    --st-maint: 214 66% 38%;    --st-maint-bg: 213 72% 95%;    --st-maint-bd: 213 56% 82%;
+    --st-nodata: 215 16% 34%;   --st-nodata-bg: 214 20% 93%;   --st-nodata-bd: 214 16% 80%;
+  }
+
+  .dark {
+    /* Cool-slate secondary theme — functional, not the focus */
+    --background: 215 28% 9%;
+    --foreground: 210 20% 94%;
+    --card: 215 25% 12%;
+    --card-foreground: 210 20% 94%;
+    --popover: 215 25% 12%;
+    --popover-foreground: 210 20% 94%;
+    --primary: 174 58% 50%;
+    --primary-foreground: 215 30% 10%;
+    --secondary: 215 20% 18%;
+    --secondary-foreground: 210 20% 94%;
+    --muted: 215 20% 17%;
+    --muted-foreground: 214 16% 68%;
+    --accent: 184 40% 20%;
+    --accent-foreground: 174 58% 70%;
+    --destructive: 0 64% 58%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 215 18% 24%;
+    --border-strong: 215 16% 32%;
+    --input: 215 18% 26%;
+    --ring: 174 58% 52%;
+
+    --st-live: 152 50% 60%;     --st-live-bg: 152 30% 16%;     --st-live-bd: 152 24% 28%;
+    --st-unstable: 38 80% 62%;  --st-unstable-bg: 36 44% 16%;  --st-unstable-bd: 36 42% 28%;
+    --st-down: 2 72% 66%;       --st-down-bg: 2 44% 18%;       --st-down-bd: 2 44% 30%;
+    --st-maint: 213 70% 68%;    --st-maint-bg: 214 40% 18%;    --st-maint-bd: 214 36% 30%;
+    --st-nodata: 214 14% 66%;   --st-nodata-bg: 214 16% 18%;   --st-nodata-bd: 214 14% 30%;
+  }
+}
+
+@layer base {
+  * {
+    border-color: hsl(var(--border));
+  }
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-family: "Noto Sans", ui-sans-serif, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@layer utilities {
+  /* Light, reduced-motion-safe entrance */
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  .animate-rise {
+    animation: rise 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .animate-rise {
+      animation: none;
+    }
+  }
+}
