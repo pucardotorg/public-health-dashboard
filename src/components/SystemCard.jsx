@@ -3,7 +3,7 @@ import { STATUS_UI, cn, relativeTime, clockIST } from "@/lib/ui";
 /* A monitored-system tile. Status leads the read — coloured label +
  * left rail, immediately legible (and red) when broken, without
  * opening. Two clearly-distinct times: "since" (when this state began)
- * on the status line, and last-checked beside Re-check. No icons. */
+ * on the status line, and last-checked in the footer. No icons. */
 
 const RAIL = {
   live: "before:bg-st-live",
@@ -13,7 +13,7 @@ const RAIL = {
   nodata: "before:bg-st-nodata",
 };
 
-export default function SystemCard({ item, now, onOpen, onRecheck, checking, index = 0 }) {
+export default function SystemCard({ item, now, onOpen, index = 0 }) {
   const ui = STATUS_UI[item.status];
   const down = item.status === "down";
   const timed = item.status === "down" || item.status === "unstable";
@@ -48,19 +48,8 @@ export default function SystemCard({ item, now, onOpen, onRecheck, checking, ind
         </p>
       </div>
 
-      <div className="flex items-center justify-between border-t border-border px-5 py-2.5">
+      <div className="flex items-center border-t border-border px-5 py-2.5">
         <span className="text-[12px] tabular-nums text-muted-foreground">Checked {relativeTime(item.lastChecked, now)}</span>
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onRecheck(item.id);
-          }}
-          disabled={checking}
-          className="rounded px-1.5 py-0.5 text-[12px] font-semibold text-primary transition-colors hover:bg-accent disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        >
-          {checking ? "Checking…" : "Re-check"}
-        </button>
       </div>
     </div>
   );

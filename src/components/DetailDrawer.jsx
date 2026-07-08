@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import { RefreshCw, Loader2, ExternalLink } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -19,7 +19,7 @@ const HEADER_TINT = {
   live: "border-border bg-card",
 };
 
-export default function DetailDrawer({ open, item, now, onOpenChange, recheck, checking, throttled }) {
+export default function DetailDrawer({ open, item, now, onOpenChange }) {
   // Retain the last item so the slide-out animation keeps its content.
   const last = useRef(null);
   if (item) last.current = item;
@@ -73,15 +73,6 @@ export default function DetailDrawer({ open, item, now, onOpenChange, recheck, c
             </div>
 
             <SheetFooter className="flex-row items-center gap-2 border-t px-6 py-4">
-              <Button
-                variant="ghost"
-                onClick={() => recheck(data.id)}
-                disabled={checking || throttled}
-                title="Re-fetches the latest recorded status; it doesn't ping the provider"
-              >
-                {checking ? <Loader2 className="animate-spin" /> : <RefreshCw />}
-                {checking ? "Checking…" : "Re-check"}
-              </Button>
               <Button asChild className="flex-1">
                 <a href={REPORT_URL} target="_blank" rel="noreferrer">
                   Report a problem <ExternalLink />

@@ -2,12 +2,11 @@ import { STATUS_UI, StatusDot, cn, relativeTime } from "@/lib/ui";
 
 /* The overall verdict — the page's anchor. The situation leads (high
  * in the type hierarchy); a tone dot anchors it; the stacked bar gives
- * the distribution at a glance. A global Refresh re-checks every system
- * (re-fetches the latest recorded status — it doesn't re-poll vendors). */
+ * the distribution at a glance. */
 
 const BAR_ORDER = ["down", "nodata", "unstable", "maintenance", "live"];
 
-export default function StatusHero({ verdict, items, now, lastChecked, onRefresh, refreshing }) {
+export default function StatusHero({ verdict, items, now, lastChecked }) {
   const total = items.length;
   const counts = BAR_ORDER.map((s) => ({
     status: s,
@@ -20,22 +19,11 @@ export default function StatusHero({ verdict, items, now, lastChecked, onRefresh
         {/* Heading row */}
         <div className="flex items-center justify-between gap-3">
           <h2 className="text-[13px] font-semibold text-muted-foreground">Integration health</h2>
-          <div className="flex items-center gap-3">
-            {lastChecked != null && (
-              <span className="hidden text-[12px] tabular-nums text-muted-foreground sm:inline">
-                Updated {relativeTime(lastChecked, now)}
-              </span>
-            )}
-            <button
-              type="button"
-              onClick={onRefresh}
-              disabled={refreshing}
-              title="Re-checks every system — re-fetches the latest recorded status; it does not re-poll the providers."
-              className="rounded-md border border-border-strong px-3 py-1.5 text-[13px] font-semibold text-foreground transition-colors hover:bg-accent hover:text-accent-foreground disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              {refreshing ? "Refreshing…" : "Refresh all"}
-            </button>
-          </div>
+          {lastChecked != null && (
+            <span className="hidden text-[12px] tabular-nums text-muted-foreground sm:inline">
+              Updated {relativeTime(lastChecked, now)}
+            </span>
+          )}
         </div>
 
         {/* The situation — leads the hierarchy */}
