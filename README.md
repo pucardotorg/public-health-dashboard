@@ -21,8 +21,28 @@ nvm use 22          # requires Node 18+, tested on 22.22
 npm install
 npm run dev         # http://localhost:5173
 npm run build       # production build → dist/
-npm run preview     # serve the build
+npm run preview     # serve the build (uses the prod base path, see below)
 ```
+
+## Deployment — base path
+
+In production the app is served from a **sub-path** on the landing-page host:
+
+```
+https://oncourts.kerala.gov.in/public-health-dashboard/
+```
+
+So the build prefixes every asset URL with `/public-health-dashboard/`. This is
+set once in [`vite.config.js`](vite.config.js) via Vite's `base` option:
+
+- **`npm run dev`** → served at `/` (root) for local convenience.
+- **`npm run build` / `npm run preview`** → served at `/public-health-dashboard/`
+  (matches prod). Built `index.html` references e.g.
+  `src="/public-health-dashboard/assets/index-*.js"`.
+
+DevOps just needs to serve the contents of `dist/` under that sub-path (and add
+an SPA fallback so deep links rewrite to `index.html`). To change the sub-path,
+edit the `BASE_PATH` constant in `vite.config.js`.
 
 ## What's implemented (matches the Figma handover)
 
