@@ -66,9 +66,10 @@ web_modules/
 .yarn-integrity
 
 # dotenv environment variable files
-.env
-.env.*
-!.env.example
+# Shared, non-secret env files (only public URLs) ARE committed so every
+# environment builds consistently. Personal/secret overrides go in *.local files.
+.env.local
+.env.*.local
 
 # parcel-bundler cache (https://parceljs.org/)
 .cache

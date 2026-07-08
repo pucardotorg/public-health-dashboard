@@ -8,7 +8,7 @@ import {
   SheetFooter,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { StatusBadge, relativeTime, clockIST, cn } from "@/lib/ui";
+import { StatusBadge, formatUpdatedAt, cn } from "@/lib/ui";
 
 /* Placeholder destination for the prototype — the Google suggestion form. */
 const REPORT_URL = "https://forms.gle/oncourts-report-placeholder";
@@ -19,19 +19,14 @@ const HEADER_TINT = {
   live: "border-border bg-card",
 };
 
-export default function DetailDrawer({ open, item, now, onOpenChange }) {
+export default function DetailDrawer({ open, item, onOpenChange }) {
   // Retain the last item so the slide-out animation keeps its content.
   const last = useRef(null);
   if (item) last.current = item;
   const data = item || last.current;
 
   const userActions = data ? data.actions.filter((a) => a.a === "user") : [];
-  const timed = data && data.status === "down";
-  const timing = data
-    ? timed
-      ? `Since ${clockIST(data.since)} · checked ${relativeTime(data.lastChecked, now)}`
-      : `Checked ${relativeTime(data.lastChecked, now)}`
-    : "";
+  const timing = data ? `Last updated at ${formatUpdatedAt(data.lastChecked)}` : "";
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -68,6 +63,17 @@ export default function DetailDrawer({ open, item, now, onOpenChange }) {
                       )
                     )}
                   </ul>
+                </section>
+              )}
+
+              {/* Live probe detail straight from the backend health check. */}
+              {data.diagnostic && (
+                <section className="mt-6 border-t border-border pt-4">
+                  <p className="text-[12.5px] font-semibold text-muted-foreground">Last check</p>
+                  <p className="mt-1.5 font-mono text-[12.5px] leading-relaxed text-muted-foreground">
+                    {data.diagnostic}
+                    {typeof data.responseTimeMs === "number" && ` · ${data.responseTimeMs} ms`}
+                  </p>
                 </section>
               )}
             </div>

@@ -1,13 +1,14 @@
 # OnCourts — Integration Status Dashboard · Developer Guide
 
 A complete walkthrough of this codebase for a developer picking it up for the
-first time. Covers **what** it is, **why** it exists, **how** it is wired
-together, and **how to extend it** when the real backend arrives.
+first time. Covers **what** it is, **why** it exists, and **how** it is wired
+together.
 
-> **TL;DR** — A front-end-only React dashboard that shows the live health of
-> OnCourts' external integrations (e-Payment, SMS, e-Sign, …). Everything is
-> **mock data** today; the component tree is designed so that when the backend
-> health API lands, you replace one file (`src/data/store.js`) and nothing else.
+> **TL;DR** — A React dashboard that shows the **live** health of OnCourts'
+> external integrations (e-Payment, SMS, e-Sign, iCOPS, …). Statuses are fetched
+> from the backend health API (`src/lib/api.js`) and mapped onto display metadata
+> + authored guidance copy in `src/data/store.js`. It fetches once on page load
+> (no polling) and is configured per environment (dev/UAT/prod) via `.env` files.
 
 ---
 
@@ -24,20 +25,45 @@ The work splits in two:
 
 | Part | Status | This repo |
 |---|---|---|
-| **Backend** polling service + status table + admin override | *not finalised* | ❌ out of scope |
-| **Frontend** public status page (responsive, with dummy data) | *in progress* | ✅ **this repo** |
+| **Backend** polling service + status API | *live* (`/health-dashboard/v1/services/status`) | ❌ separate repo |
+| **Frontend** public status page (responsive) | *integrated with the live API* | ✅ **this repo** |
 
-Because the backend contract isn't final, **every status, timestamp and message
-in this app is illustrative dummy data.** The goal was to build the full UI from
-the Figma handover so it is ready to plug into the real API later.
+The frontend fetches live status from the backend health API. It still **authors
+the display copy** (human-friendly names, capability/consequence lines, impact +
+"what you can do" guidance, and which perspective sees each service) in
+`src/data/store.js` — the API only supplies status, timestamps, response time and
+a short probe message.
+
+### Live API contract
+
+`GET {host}/health-dashboard/v1/services/status` → array of:
+
+```json
+{ "id": 12, "serviceName": "ICOPS", "serviceUrl": "tcp://…:443",
+  "lastStatus": "DOWN", "lastUpdatedTime": 1783507511893,
+  "responseTimeMs": 11087, "message": "Connect timed out" }
+```
+
+- `lastStatus` `UP`→Operational, `DOWN`→Down (also maps `DEGRADED`→Degraded,
+  `MAINTENANCE`, `UNKNOWN`→No-data for the future).
+- `serviceName` is mapped to an internal id via `SERVICE_ID_BY_API`
+  (`TREASURY`→`epayment`, `ESIGN`→`esign`, `SMS`→`sms`, `ICOPS`→`icops`, …).
+- `lastUpdatedTime` is the last **poll** time, shown as an absolute IST time
+  ("Last updated at 10:47 AM", or "… 29/06/2026 10:47 AM" if not today) via
+  `formatUpdatedAt()`. The API doesn't yet send an outage-*start* time, so cards
+  don't show "since HH:MM" — when the backend adds it, populate `since` in
+  `buildStore()` and it renders.
 
 ### Scope decisions locked in the ticket (reflected in the code)
 
-- **Statuses:** only **Down** and **Operational** in v1 (Degraded / Maintenance /
-  No-data exist in the data model for the future, but aren't surfaced in the demo toggles).
-- **Snapshot only** — no historical uptime graphs.
+- **Statuses:** only **Down** and **Operational** today (`UP`/`DOWN` from the API);
+  Degraded / Maintenance / No-data exist in the data model for the future.
+- **Snapshot only** — no historical uptime graphs; fetched once per page load.
 - **No action-blocking** — the dashboard never blocks payments/e-sign; it only *informs*.
-- **Perspectives** — All · Advocate · Court staff · Internal (grouping labels only for now).
+- **Perspectives** — All · Advocate · Court staff · Internal exist in the data model
+  (`audience`), but the **"Viewing as" switcher is currently commented out in
+  `App.jsx`** (only *All* is shown) until there's more than one role worth
+  exposing. Re-enable by uncommenting the block — the logic still works.
 
 ---
 
@@ -115,10 +141,11 @@ public-health-dashboard/
 └── src/
     ├── main.jsx               # React entry — mounts <App/> into #root
     ├── index.css              # Tailwind layers + CSS design tokens (:root / .dark)
-    ├── App.jsx                # page shell: state, layout, demo bar  ← the brain
+    ├── App.jsx                # page shell: fetch/poll, state, layout   ← the brain
     ├── data/
-    │   └── store.js           # ALL mock data + selectors            ← the data layer
+    │   └── store.js           # API→UI mapping + display copy + selectors ← the data layer
     ├── lib/
+    │   ├── api.js             # health-API client (fetch + endpoint URL from env)
     │   ├── utils.js           # cn() — merges Tailwind class strings
     │   └── ui.jsx             # status→colour map, IST time helpers, StatusDot/Badge
     └── components/
@@ -137,14 +164,17 @@ public-health-dashboard/
 
 ```mermaid
 graph TD
-    subgraph DATA["Data layer — src/data/store.js"]
-        SVC["SERVICES catalogue"]
-        COPY["COPY (impact + guidance text)"]
-        SCN["SCENARIOS (dummy states)"]
-        SEL["Selectors: resolveItem / overallVerdict"]
+    API["Backend health API<br/>/health-dashboard/v1/services/status"] --> FETCH
+    subgraph DATA["Data layer — src/lib/api.js + src/data/store.js"]
+        FETCH["api.js — fetchServiceStatus()"]
+        BUILD["store.js — buildStore() maps API→items"]
+        COPY["store.js — SERVICES + COPY (display metadata + guidance)"]
+        SEL["store.js — selectors: resolveItem / overallVerdict"]
+        FETCH --> BUILD --> SEL
+        COPY --> SEL
     end
     subgraph STATE["State layer — src/App.jsx"]
-        ST["useState: store, role, filter,<br/>query, openId, dark, view"]
+        ST["useState: store, phase, error,<br/>role, filter, query, openId"]
     end
     subgraph VIEW["View layer — components/"]
         HERO["StatusHero"]
@@ -152,19 +182,19 @@ graph TD
         DRAWER["DetailDrawer"]
     end
     DATA --> STATE --> VIEW
-    VIEW -- "clicks: recheck, open, filter" --> STATE
+    VIEW -- "clicks: open, filter, search" --> STATE
 ```
 
-**The key idea:** components are dumb renderers. All truth lives in `store.js`
-(the data) and `App.jsx` (the current selections). Swap `store.js` for real API
-calls and the view layer doesn't change.
+**The key idea:** components are dumb renderers. Live status enters through
+`api.js`, is shaped by `store.js`, and `App.jsx` holds the current selections.
+The API supplies *status*; `store.js` supplies the *words* around it.
 
 ---
 
-## 5. The data layer — `src/data/store.js`
+## 5. The data layer — `src/lib/api.js` + `src/data/store.js`
 
-This is the most important file to understand. It defines the domain and all the
-mock data.
+`api.js` fetches the live status; `store.js` defines the domain, maps the API
+response onto it, and derives what the UI shows.
 
 ### 5.1 Status taxonomy
 
@@ -172,8 +202,9 @@ mock data.
 STATUS = { live, maintenance, unstable, nodata, down }   // each has a `rank`
 ```
 
-`rank` drives sort order (most severe first). In **v1 only `live` and `down`**
-are exercised by the demo; the others are wired for the future.
+`rank` drives sort order (most severe first). The backend currently sends only
+`UP`/`DOWN` (→ `live`/`down`); `unstable`/`maintenance`/`nodata` are mapped and
+ready for when the backend emits them.
 
 ```mermaid
 graph LR
@@ -211,24 +242,27 @@ Six monitored integrations. Each row declares its metadata:
 
 ### 5.3 Authored copy — `COPY`
 
-For each service × status, human-written **impact** text and a list of
-**actions** (`{ a: "user" | "team", t: "..." }`). Only `a: "user"` actions show
-in the public "What you can do" list. This is where all the descriptive dummy
-guidance lives.
+For each service × non-operational status, human-written **impact** text and a
+list of **actions** (`{ a: "user" | "team", t: "..." }`). Only `a: "user"`
+actions show in the public "What you can do" list. The API doesn't provide this
+guidance — it's authored here and merged with the live status in `resolveItem`.
 
-### 5.4 Scenarios — the dummy "database snapshots"
+### 5.4 API → store mapping — `buildStore()` + `SERVICE_ID_BY_API`
 
-```js
-SCENARIOS = [
-  { id: "incident", label: "Incident",        hint: "One system down" },
-  { id: "default",  label: "All operational", hint: "Healthy" },
-  { id: "bothdown", label: "Sign-in down",    hint: "Both OTP channels down" },
-]
+`buildStore(apiRows)` turns the API array into the `items` map the selectors
+consume, keyed by our internal id:
+
+```
+API row  { serviceName:"ICOPS", lastStatus:"DOWN", lastUpdatedTime, responseTimeMs, message, serviceUrl }
+   │  SERVICE_ID_BY_API["ICOPS"] → "icops"   ·   normalizeStatus("DOWN") → "down"
+   ▼
+items.icops = { status:"down", since:null, lastChecked:lastUpdatedTime,
+                apiMessage, responseTimeMs, serviceUrl, apiServiceName, apiId }
 ```
 
-`makeScenario(id)` builds the initial `items` map (each service → `{ status,
-since, lastChecked }`). This stands in for what the backend polling table will
-eventually return.
+- Unknown `serviceName`s get a slug id + fallback metadata, so a new backend
+  service still renders (just without authored copy) instead of breaking.
+- `since` is `null` (the API sends last-*poll* time, not outage-*start*).
 
 ### 5.5 Selectors — deriving what the UI shows
 
@@ -259,55 +293,60 @@ can log in** — a bigger deal than "2 systems down", so it gets its own headlin
 
 ## 6. The state layer — `src/App.jsx`
 
-`App.jsx` owns all interactive state and passes data down as props.
+`App.jsx` fetches the live status, owns all interactive state, and passes data
+down as props.
 
 ```mermaid
 flowchart TD
+    subgraph LOAD["Fetch lifecycle (once on load — no polling)"]
+        MOUNT["mount"] --> FETCH["fetchServiceStatus()"]
+        FETCH -->|ok| BUILD["buildStore(rows) → setStore · phase=ready"]
+        FETCH -->|error| ERR["setError · phase=error"]
+    end
     subgraph APP["App.jsx state (useState)"]
-        store["store — the scenario's items map"]
+        store["store — items map from API"]
+        phase["phase — loading/ready/error"]
         role["roleId — All/Advocate/Staff/Internal"]
         filter["filter — all/attention/live"]
         query["query — search text"]
         openId["openId — which card's drawer is open"]
-        dark["dark — theme"]
-        view["view — desktop/mobile preview"]
     end
-
-    store --> R["resolveVisible()"]
+    BUILD --> store
+    store --> R["resolveVisible(role)"]
     role --> R
     R --> sorted["sort by severity rank"]
     sorted --> filtered["apply filter + search"]
     filtered --> CARDS["render SystemCard list"]
-
     store --> V["overallVerdict()"] --> HERO["StatusHero"]
     openId --> RI["resolveItem()"] --> DRAWER["DetailDrawer"]
 ```
 
-### Data pipeline (raw records → pixels)
+### Data pipeline (API → pixels)
 
 ```mermaid
 flowchart LR
-    items["store.items<br/>(raw records)"] --> resolve["resolveVisible<br/>+ metadata + copy"]
+    api["health API"] --> build["buildStore()<br/>items map"] --> resolve["resolveVisible<br/>+ metadata + copy"]
     resolve --> sort["sort by rank<br/>(down first)"]
     sort --> filt["filter pills<br/>+ search box"]
     filt --> grid["card grid"]
 ```
 
-### Interactions and what they mutate
+### Fetch behaviour & interactions
 
-| Action | Handler | Effect |
-|---|---|---|
-| Click a card | `setOpenId` | opens the detail drawer |
-| **Re-check** (card/drawer) | `recheck(id)` | bumps that item's `lastChecked` (800 ms fake "checking…", then 5 s throttle) |
-| **Refresh all** (hero) | `recheckAll` | bumps `lastChecked` on every item |
-| **Viewing as** pills | `setRoleId` | changes which services are visible |
-| Filter pills / search | `setFilter` / `setQuery` | narrows the grid |
-| Dark-mode button | `setDark` | toggles the `.dark` class on `<html>` |
-| **Demo bar** (scenario / flip / mobile) | `loadScenario` / `flipStatus` / `setView` | dev-only controls to explore states |
+| Thing | How it works |
+|---|---|
+| **Load** | fetches **once** on mount; `phase = "loading"` → spinner until the response. **No polling.** |
+| **Load fails** | full-page error + a **Try again** button (only shown when there's no data — equivalent to reloading). |
+| **Newer data** | the user reloads the page. The backend refreshes its own table on an interval; each card's "Last updated at &lt;time&gt;" (from `lastUpdatedTime`) shows how fresh each service's status is. |
+| **Timestamps** | shown as absolute IST via `formatUpdatedAt()` — no relative "…ago" and no ticking clock, so nothing recalculates after load. |
+| **Viewing as** pills | `setRoleId` — changes which services are visible (by `audience`). *Currently commented out in `App.jsx`; `roleId` stays `"all"`.* |
+| **Filter pills / search** | `setFilter` / `setQuery` — narrows the grid client-side. |
+| **Click a card** | `setOpenId` — opens the detail drawer. |
 
-> The **demo bar** at the bottom is a development affordance (scenario switch,
-> per-system Down/Operational flip, and a phone-frame mobile preview). It's
-> hidden when the app runs embedded (`?embed=1`). Remove it before production.
+> There is intentionally **no public "refresh" or "re-check" button** — per the
+> ticket, a public refresh could be abused, so we don't poll and don't expose a
+> refresh control. A manual/admin re-check would be a future, access-controlled
+> addition.
 
 ---
 
@@ -315,8 +354,7 @@ flowchart LR
 
 ```mermaid
 graph TD
-    App["App.jsx"] --> Header["Header / app bar"]
-    App --> Roles["ToggleGroup — Viewing as"]
+    App -. "disabled (commented out)" .-> Roles["ToggleGroup — Viewing as"]
     App --> Hero["StatusHero<br/>verdict + breakdown bar"]
     App --> Toolbar["Search + filter pills"]
     App --> Grid["Grid"]
@@ -324,18 +362,18 @@ graph TD
     Grid --> Card2["SystemCard"]
     Grid --> CardN["SystemCard …"]
     App --> Drawer["DetailDrawer (Sheet)"]
-    App --> DemoBar["Demo bar (dev only)"]
 ```
 
 - **`StatusHero.jsx`** — the page anchor. Shows the verdict headline + a
   parts-of-whole "status breakdown" bar (desktop: labelled segments; mobile:
-  continuous bar + legend) and the **Refresh all** button.
+  continuous bar + legend). No refresh control.
 - **`SystemCard.jsx`** — one integration. Status leads the read via a coloured
   **label + left rail** (never colour alone → accessible). Down cards get a red
-  tint and a "since HH:MM". Footer has last-checked + **Re-check**.
+  tint. Footer shows **"Last updated at &lt;time&gt;"** (absolute IST) for that service.
 - **`DetailDrawer.jsx`** — a Radix Dialog rendered as a right-side **Sheet**
-  (full-screen on mobile). Shows status badge, timing, plain-language impact,
-  optional cascade/note, "What you can do", and **Re-check** + **Report a problem**.
+  (full-screen on mobile). Shows status badge, "Last updated at", plain-language
+  impact, optional cascade/note, "What you can do", the live probe **"Last check"**
+  message (+ response time), and **Report a problem**.
 - **`components/ui/*`** — the shadcn/ui-style Radix primitives. You rarely touch
   these; they're the accessible building blocks (`Button`, `Sheet`,
   `ToggleGroup`, `Tooltip`).
@@ -358,8 +396,10 @@ flowchart LR
   teal), `muted-foreground`, `border`, …
 - **Status tokens:** `st-live`, `st-down`, `st-unstable`, `st-maint`, `st-nodata`
   — each with a base text colour, a soft `-bg` fill, and a `-bd` border.
-- **Dark mode** = toggling the `.dark` class on `<html>` (done in `App.jsx`),
-  which flips every variable to its dark value. No component changes needed.
+- **Dark mode** = the full `.dark` token set exists in `index.css`, so the whole
+  UI themes by toggling a `.dark` class on `<html>`. There is **no dark-mode
+  toggle in the UI right now** (the earlier toggle was removed); the tokens are
+  ready if/when a theme switch is reintroduced.
 
 The `STATUS_UI` map in `lib/ui.jsx` is the single source that ties a status id to
 its label + Tailwind classes:
@@ -385,48 +425,48 @@ STATUS_UI.down = { label: "Down", text: "text-st-down",
 ## 10. How to extend
 
 ### Add a new integration
-1. Add a row to `SERVICES` in `store.js` (id, name, vendor, capability, affects, audience).
-2. Add its `COPY[id]` block (impact + actions per status).
-3. Done — it appears automatically in the grid and counts.
+1. Backend starts returning it in the status array (new `serviceName`).
+2. Add the API→id mapping in `SERVICE_ID_BY_API` and a row in `SERVICES`
+   (id, name, vendor, capability, affects, audience) in `store.js`.
+3. Add its `COPY[id]` block (impact + actions per non-operational status).
+4. Done — it appears automatically. (Even without steps 2–3 it renders with a
+   fallback name and no guidance, so it never breaks the page.)
 
-### Add / change dummy states
-- Edit `scenarioRecords()` in `store.js`, or use the **Flip systems** demo control at runtime.
+### Point at a different backend / environment
+- Edit the `.env.*` file for that environment (`VITE_API_BASE_URL`,
+  `VITE_HEALTH_STATUS_PATH`). See §3 and the README.
 
-### Wire in the real backend (the big one)
-Replace the mock scenario with fetched data — the selectors and components stay put:
-
-```mermaid
-flowchart LR
-    subgraph NOW["Today (mock)"]
-        M["makeScenario(id)"] --> items1["items map"]
-    end
-    subgraph LATER["With backend"]
-        F["fetch('/api/health')"] --> map["map response → items map"]
-        map --> items2["items map (same shape)"]
-    end
-    items1 & items2 --> sel["resolveItem / overallVerdict<br/>(unchanged)"]
-```
-
-Concretely: in `App.jsx`, swap `useState(() => makeScenario(...))` for a
-`useEffect` that fetches the health endpoint and `setStore` with a matching
-`{ name, items }` shape. Also plan for the **admin override** and **Report a
-problem** endpoints from the ticket.
+### Likely next backend-driven features
+- **Outage start time** — when the API adds it, set `since` in `buildStore()`;
+  the "since HH:MM" line and drawer timing light up automatically.
+- **Degraded/maintenance** — already mapped in `normalizeStatus`; the moment the
+  API emits `DEGRADED`/`MAINTENANCE` those states render.
+- **Admin override / manual re-check** — the ticket wants these access-controlled
+  (not public). Add behind auth; the current UI deliberately has no public
+  refresh button.
 
 ---
 
-## 11. What was built so far (change log)
+## 11. What was built (change log)
 
-- **Scaffolding:** Vite + React 19 project; `@`→`src` alias; Tailwind 3.4 + PostCSS.
-- **Design tokens:** full light/dark HSL token set in `index.css`; Tailwind mapping.
+- **Scaffolding:** Vite + React 19; `@`→`src` alias; Tailwind 3.4 + PostCSS.
+- **Design tokens:** full light/dark HSL token set in `index.css`.
 - **UI primitives:** Radix-based `button`, `sheet`, `toggle`, `toggle-group`, `tooltip`.
-- **Data layer:** `store.js` with 6 integrations, per-status impact/guidance copy,
-  3 scenarios, and role-aware selectors + verdict logic (all dummy data).
-- **Components:** `StatusHero`, `SystemCard`, `DetailDrawer`.
-- **App shell:** app bar, "Viewing as" perspective switch, search + filter pills,
-  responsive card grid, footnotes, and a dev-only demo bar (scenario / flip /
-  mobile preview).
-- **All 8 Figma screens reproduced** (desktop operational/incident/sign-in-down/advocate + detail; mobile operational/incident + detail).
-- **Verified:** clean `npm install`, passing `npm run build`, dev server serves on :5173.
+- **UI from the Figma handover:** adaptive status hero + breakdown bar,
+  searchable/filterable card grid, detail drawer, responsive desktop→mobile.
+  (The "Viewing as" perspective switch is built but **currently commented out**
+  in `App.jsx` — see §1.)
+- **Live API integration:** `src/lib/api.js` fetches
+  `/health-dashboard/v1/services/status`; `buildStore()` maps the response;
+  fetched **once on load (no polling / no refresh button)** with loading and
+  error states. Mock scenarios and the demo bar were removed.
+- **Absolute timestamps:** cards + drawer show "Last updated at &lt;time&gt;"
+  (`formatUpdatedAt`) — no relative "…ago" and no ticking clock.
+- **Environment config:** `.env` / `.env.development` / `.env.uat` /
+  `.env.production` (+ `.env.example`); per-env build scripts; a local dev proxy
+  so there's no CORS while developing.
+- **Verified:** clean `npm install`, passing `npm run build`, and the live dev
+  API mapping confirmed (ICOPS down → "1 system down").
 
 ---
 
@@ -434,12 +474,15 @@ problem** endpoints from the ticket.
 
 | I want to change… | File |
 |---|---|
-| The dummy statuses / which system is down | `src/data/store.js` → `scenarioRecords` |
+| Which backend / environment it calls | `.env.*` (`VITE_API_BASE_URL`, `VITE_HEALTH_STATUS_PATH`) |
+| The API request/parsing | `src/lib/api.js` |
+| API status/name → UI mapping | `src/data/store.js` → `SERVICE_ID_BY_API`, `normalizeStatus`, `buildStore` |
 | The impact text or user guidance | `src/data/store.js` → `COPY` |
 | A service's name/vendor/visibility | `src/data/store.js` → `SERVICES` |
 | Status label or colour | `src/lib/ui.jsx` (`STATUS_UI`) + `src/index.css` (tokens) |
 | The overall headline logic | `src/data/store.js` → `overallVerdict` |
-| Page layout / header / toolbar | `src/App.jsx` |
+| Loading & error UI / fetch behaviour | `src/App.jsx` |
+| Local dev proxy target | `.env.development` (`VITE_DEV_API_TARGET`) + `vite.config.js` |
 | A card's look | `src/components/SystemCard.jsx` |
 | The detail panel | `src/components/DetailDrawer.jsx` |
 | Theme colours / fonts | `src/index.css` + `tailwind.config.js` |
