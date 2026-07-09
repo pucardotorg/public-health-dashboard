@@ -55,32 +55,32 @@ edit the `BASE_PATH` constant in `vite.config.js`.
 
 ## Live data & environments
 
-The dashboard calls `GET {VITE_API_BASE_URL}{VITE_HEALTH_STATUS_PATH}` **once on
-page load** — there is **no polling** and no refresh button (the backend already
-refreshes its status table on its own interval; users reload the page for newer
-data, which keeps request volume low). Each card shows **"Last updated at"** the
-service's `lastUpdatedTime` as an absolute IST time (time-only if today, else
-`DD/MM/YYYY h:mm AM/PM`). Config is per environment via `.env` files (see
-[`.env.example`](.env.example)):
+The dashboard calls `GET {VITE_API_BASE_URL}{VITE_HEALTH_STATUS_PATH}` on page
+load and then **polls every `VITE_REFRESH_INTERVAL_MS`** (default **3 minutes**)
+while the page stays open. There is **no manual refresh button** (a public one
+could be spammed); the poll is automatic and users can also reload the page. Each
+card shows **"Last updated at"** the service's `lastUpdatedTime` as an absolute
+IST time (time-only if today, else `DD/MM/YYYY h:mm AM/PM`). Config is per
+environment via `.env` files (see [`.env.example`](.env.example)):
 
-| File | Mode / branch | Purpose |
-|---|---|---|
-| `.env` | all | shared defaults (endpoint path, API origin) |
-| `.env.development` | `npm run dev`, `build:dev` · `develop` branch → dev | dev API base + local proxy target |
-| `.env.uat` | `build:uat` · `main` branch → UAT | UAT API base |
-| `.env.production` | `build`/`build:prod` · `main` branch → prod | prod API base |
-| `.env.local` | any (git-ignored) | personal overrides |
+| File               | Mode / branch                                       | Purpose                                                    |
+| ------------------ | --------------------------------------------------- | ---------------------------------------------------------- |
+| `.env`             | all                                                 | shared defaults (endpoint path, API origin, poll interval) |
+| `.env.development` | `npm run dev`, `build:dev` · `develop` branch → dev | dev API base + local proxy target                          |
+| `.env.uat`         | `build:uat` · `main` branch → UAT                   | UAT API base                                               |
+| `.env.production`  | `build`/`build:prod` · `main` branch → prod         | prod API base                                              |
+| `.env.local`       | any (git-ignored)                                   | personal overrides                                         |
 
 **Same-origin by default.** `VITE_API_BASE_URL` is empty in every env, so the
-browser requests the API *relative to whatever host the dashboard is served
-from* — no CORS, and nothing to change per environment. This assumes the
+browser requests the API _relative to whatever host the dashboard is served
+from_ — no CORS, and nothing to change per environment. This assumes the
 dashboard is served on the **same host** as the API in each environment.
 
 - **Local dev:** `npm run dev` runs a Vite proxy (see [`vite.config.js`](vite.config.js))
   that forwards `/health-dashboard/*` to `VITE_DEV_API_TARGET`
   (default `https://dristi-kerala-dev.pucar.org`), so the browser stays
   same-origin and there's no CORS while developing.
-- **Cross-origin hosting** (only if the dashboard is on a *different* domain than
+- **Cross-origin hosting** (only if the dashboard is on a _different_ domain than
   the API): set an absolute `VITE_API_BASE_URL` in that env's file and have the
   backend send CORS headers for the dashboard's origin.
 
@@ -105,12 +105,13 @@ develop ──build:dev──▶ DEV
 - **Responsive** — three-column desktop grid collapses to a single-column mobile list.
 - **Accessibility** — status conveyed by label + colour + position (never colour
   alone), visible borders, keyboard-operable cards, focus rings.
-- **No polling / no refresh button** — status is fetched once on load; users reload
-  the page for newer data (see *Live data & environments* above).
+- **Auto-refresh** — fetched on page load and re-polled every 5 min
+  (`VITE_REFRESH_INTERVAL_MS`); **no manual refresh button** (see _Live data &
+  environments_ above).
 
 > **Temporarily disabled:** the **"Viewing as"** perspective switch (All / Advocate
 > / Court staff / Internal) is commented out in `App.jsx` until there's more than
-> one role to show — every service is currently shown under the default *All*
+> one role to show — every service is currently shown under the default _All_
 > view. The role metadata (`audience`) and filtering logic remain in `store.js`,
 > so re-enabling is just uncommenting the block.
 

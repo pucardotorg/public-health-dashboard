@@ -9,7 +9,7 @@ import {
   ROLES,
   STATUS,
 } from "@/data/store";
-import { fetchServiceStatus } from "@/lib/api";
+import { fetchServiceStatus, REFRESH_INTERVAL_MS } from "@/lib/api";
 import { cn } from "@/lib/ui";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
@@ -34,9 +34,10 @@ export default function App() {
 
   const role = ROLES.find((r) => r.id === roleId);
 
-  /* Fetch + normalise the live status ONCE on load. There is no polling — the
-   * backend already refreshes its status table on its own interval; users
-   * reload the page to see newer data. This keeps request volume minimal. */
+  /* Fetch + normalise the live status. Runs on page load and then on the polling
+   * interval (see REFRESH_INTERVAL_MS). If a background poll fails but we already
+   * have data, we keep showing the last good data (no disruptive error screen);
+   * only a failed first load shows the full error state. */
   const load = useCallback(async () => {
     abortRef.current?.abort();
     const ac = new AbortController();
@@ -50,13 +51,20 @@ export default function App() {
     } catch (e) {
       if (e?.name === "AbortError") return;
       setError(e?.message || "Failed to load status.");
-      setPhase("error");
+      // Keep the last good data on a failed poll; only error out if we have none.
+      setPhase((prev) => (prev === "loading" ? "error" : prev));
     }
   }, []);
 
+  /* Fetch immediately when the page opens / is refreshed, then poll every
+   * REFRESH_INTERVAL_MS (default 3 min) while the page stays open. */
   useEffect(() => {
     load();
-    return () => abortRef.current?.abort();
+    const pollId = REFRESH_INTERVAL_MS > 0 ? setInterval(load, REFRESH_INTERVAL_MS) : null;
+    return () => {
+      abortRef.current?.abort();
+      if (pollId) clearInterval(pollId);
+    };
   }, [load]);
 
   // Close the drawer if the open service isn't visible for the current role.

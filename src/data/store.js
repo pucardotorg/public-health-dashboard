@@ -154,7 +154,7 @@ const COPY = {
       actions: [
         {
           a: "user",
-          t: "Please retry later; strictly avoid repeat attempts to prevent a double charge.",
+          t: "Please wait till the integration is restored before attempting payments. In case of urgent tasks, visit the eSeva Kendra to make offline payments.",
         },
         {
           a: "team",
@@ -182,7 +182,10 @@ const COPY = {
       impact: "You will not receive SMS alerts and OTPs.",
       actions: [
         { a: "user", t: "Sign in using Email OTP instead." },
-        { a: "team", t: "Ask the High Court to raise today's SMS limit." },
+        {
+          a: "team",
+          t: "Please be aware that you might not receive updates about your case. If you are trying to log in to your account, check your email ID for the OTP.",
+        },
         {
           a: "team",
           t: "Verify the DLT template and IP whitelisting with CDAC.",
@@ -208,7 +211,7 @@ const COPY = {
     down: {
       impact: "You will not receive email alerts and OTPs.",
       actions: [
-        { a: "user", t: "Sign in using SMS OTP instead." },
+        { a: "user", t: "Please check your SMS for case updates and OTPs." },
         { a: "team", t: "Verify NIC mail credentials after the migration." },
         { a: "team", t: "Confirm server whitelisting with NIC." },
       ],
@@ -232,7 +235,7 @@ const COPY = {
       actions: [
         {
           a: "user",
-          t: "Save your draft — complete signing once it's restored.",
+          t: "Please try again later or upload a scanned copy of a physically signed document in case of time-sensitive tasks.",
         },
         { a: "team", t: "Renew the e-Sign audit certificate (CDAC / CCA)." },
       ],
@@ -277,6 +280,10 @@ const COPY = {
     down: {
       impact: "You will not be able to send warrants to the police digitally.",
       actions: [
+        {
+          a: "user",
+          t: "Please escalate the issue and use other channels until service is restored.",
+        },
         { a: "team", t: "Re-queue the failed dispatches." },
         { a: "team", t: "Review validation errors with State Police IT." },
       ],

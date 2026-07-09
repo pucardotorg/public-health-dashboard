@@ -7,8 +7,9 @@ together.
 > **TL;DR** — A React dashboard that shows the **live** health of OnCourts'
 > external integrations (e-Payment, SMS, e-Sign, iCOPS, …). Statuses are fetched
 > from the backend health API (`src/lib/api.js`) and mapped onto display metadata
-> + authored guidance copy in `src/data/store.js`. It fetches once on page load
-> (no polling) and is configured per environment (dev/UAT/prod) via `.env` files.
+> + authored guidance copy in `src/data/store.js`. It fetches on page load and
+> polls every 5 min (`VITE_REFRESH_INTERVAL_MS`), configured per environment
+> (dev/UAT/prod) via `.env` files.
 
 ---
 
@@ -58,7 +59,8 @@ a short probe message.
 
 - **Statuses:** only **Down** and **Operational** today (`UP`/`DOWN` from the API);
   Degraded / Maintenance / No-data exist in the data model for the future.
-- **Snapshot only** — no historical uptime graphs; fetched once per page load.
+- **Snapshot only** — no historical uptime graphs; the current status is fetched
+  on load and re-polled every 5 min.
 - **No action-blocking** — the dashboard never blocks payments/e-sign; it only *informs*.
 - **Perspectives** — All · Advocate · Court staff · Internal exist in the data model
   (`audience`), but the **"Viewing as" switcher is currently commented out in
@@ -299,10 +301,10 @@ down as props.
 
 ```mermaid
 flowchart TD
-    subgraph LOAD["Fetch lifecycle (once on load — no polling)"]
-        MOUNT["mount"] --> FETCH["fetchServiceStatus()"]
+    subgraph LOAD["Fetch lifecycle (on load + poll every 5 min)"]
+        MOUNT["mount / poll tick (REFRESH_INTERVAL_MS)"] --> FETCH["fetchServiceStatus()"]
         FETCH -->|ok| BUILD["buildStore(rows) → setStore · phase=ready"]
-        FETCH -->|error| ERR["setError · phase=error"]
+        FETCH -->|error| ERR["setError · keep last good data (error screen only if none)"]
     end
     subgraph APP["App.jsx state (useState)"]
         store["store — items map from API"]
@@ -336,18 +338,18 @@ flowchart LR
 
 | Thing | How it works |
 |---|---|
-| **Load** | fetches **once** on mount; `phase = "loading"` → spinner until the response. **No polling.** |
-| **Load fails** | full-page error + a **Try again** button (only shown when there's no data — equivalent to reloading). |
-| **Newer data** | the user reloads the page. The backend refreshes its own table on an interval; each card's "Last updated at &lt;time&gt;" (from `lastUpdatedTime`) shows how fresh each service's status is. |
-| **Timestamps** | shown as absolute IST via `formatUpdatedAt()` — no relative "…ago" and no ticking clock, so nothing recalculates after load. |
+| **Load** | fetches on mount; `phase = "loading"` → spinner until the first response. |
+| **Polling** | re-fetches every `REFRESH_INTERVAL_MS` (default 5 min, from `VITE_REFRESH_INTERVAL_MS`) while the page is open; `setInterval` cleared + in-flight request aborted on unmount. |
+| **Poll fails** | keeps the last good data (stays `ready`); a full-page error + **Try again** shows only if the *first* load failed (no data yet). |
+| **Timestamps** | each card's "Last updated at &lt;time&gt;" (from `lastUpdatedTime`) is absolute IST via `formatUpdatedAt()` — no relative "…ago", no ticking clock. |
 | **Viewing as** pills | `setRoleId` — changes which services are visible (by `audience`). *Currently commented out in `App.jsx`; `roleId` stays `"all"`.* |
 | **Filter pills / search** | `setFilter` / `setQuery` — narrows the grid client-side. |
 | **Click a card** | `setOpenId` — opens the detail drawer. |
 
 > There is intentionally **no public "refresh" or "re-check" button** — per the
-> ticket, a public refresh could be abused, so we don't poll and don't expose a
-> refresh control. A manual/admin re-check would be a future, access-controlled
-> addition.
+> ticket, a user-triggered refresh could be spammed. Freshness comes from the
+> automatic 5-min poll instead. A manual/admin re-check would be a future,
+> access-controlled addition.
 
 ---
 
@@ -435,7 +437,7 @@ STATUS_UI.down = { label: "Down", text: "text-st-down",
 
 ### Point at a different backend / environment
 - Edit the `.env.*` file for that environment (`VITE_API_BASE_URL`,
-  `VITE_HEALTH_STATUS_PATH`). See §3 and the README.
+  `VITE_HEALTH_STATUS_PATH`, `VITE_REFRESH_INTERVAL_MS`). See §3 and the README.
 
 ### Likely next backend-driven features
 - **Outage start time** — when the API adds it, set `since` in `buildStore()`;
@@ -459,8 +461,9 @@ STATUS_UI.down = { label: "Down", text: "text-st-down",
   in `App.jsx` — see §1.)
 - **Live API integration:** `src/lib/api.js` fetches
   `/health-dashboard/v1/services/status`; `buildStore()` maps the response;
-  fetched **once on load (no polling / no refresh button)** with loading and
-  error states. Mock scenarios and the demo bar were removed.
+  fetched on load and **polled every 5 min** (`VITE_REFRESH_INTERVAL_MS`; no
+  manual refresh button) with loading and error states. Mock scenarios and the
+  demo bar were removed.
 - **Absolute timestamps:** cards + drawer show "Last updated at &lt;time&gt;"
   (`formatUpdatedAt`) — no relative "…ago" and no ticking clock.
 - **Environment config:** `.env` / `.env.development` / `.env.uat` /
@@ -482,6 +485,7 @@ STATUS_UI.down = { label: "Down", text: "text-st-down",
 | A service's name/vendor/visibility | `src/data/store.js` → `SERVICES` |
 | Status label or colour | `src/lib/ui.jsx` (`STATUS_UI`) + `src/index.css` (tokens) |
 | The overall headline logic | `src/data/store.js` → `overallVerdict` |
+| Poll interval | `.env` (`VITE_REFRESH_INTERVAL_MS`, default 5 min) / `src/lib/api.js` |
 | Loading & error UI / fetch behaviour | `src/App.jsx` |
 | Local dev proxy target | `.env.development` (`VITE_DEV_API_TARGET`) + `vite.config.js` |
 | A card's look | `src/components/SystemCard.jsx` |
