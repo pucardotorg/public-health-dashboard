@@ -10,8 +10,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { StatusBadge, formatUpdatedAt, cn } from "@/lib/ui";
 
-/* Placeholder destination for the prototype — the Google suggestion form. */
-const REPORT_URL = "https://forms.gle/oncourts-report-placeholder";
+/* "Report a problem" destination — Google Form (opens in a new tab). */
+const REPORT_URL = "https://docs.google.com/forms/d/e/1FAIpQLScr8ANFxo1eIeoK1wLnhiOfpobcn_UfvEuS7bBwkmCHCqva7w/viewform";
 
 /* Header carries the status as a subtle wash — matches the card. */
 const HEADER_TINT = {
