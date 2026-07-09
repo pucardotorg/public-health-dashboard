@@ -237,8 +237,9 @@ Six monitored integrations. Each row declares its metadata:
 - **`audience`** controls role visibility — `icops` is court-only, so Advocates never see it.
 - **`needsAuth`** means "this service needs OTP login to work" — used to show a
   cascade warning ("Sign-in is down, so this will also fail").
-- **`capability`** = what it does (shown when healthy); **`affects`** = the
-  consequence (shown when down).
+- **`capability`** = what the integration does; it's shown on the card
+  regardless of status. (When a service is down, the plain-language consequence
+  comes from the authored `COPY[id].down.impact`, shown in the detail drawer.)
 
 ### 5.3 Authored copy — `COPY`
 
@@ -427,7 +428,7 @@ STATUS_UI.down = { label: "Down", text: "text-st-down",
 ### Add a new integration
 1. Backend starts returning it in the status array (new `serviceName`).
 2. Add the API→id mapping in `SERVICE_ID_BY_API` and a row in `SERVICES`
-   (id, name, vendor, capability, affects, audience) in `store.js`.
+   (id, name, vendor, capability, audience) in `store.js`.
 3. Add its `COPY[id]` block (impact + actions per non-operational status).
 4. Done — it appears automatically. (Even without steps 2–3 it renders with a
    fallback name and no guidance, so it never breaks the page.)

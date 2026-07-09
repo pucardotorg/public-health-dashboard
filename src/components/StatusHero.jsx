@@ -16,10 +16,6 @@ export default function StatusHero({ verdict, items }) {
   return (
     <section className="animate-rise mt-6 rounded-xl border border-border bg-card">
       <div className="px-6 py-5 sm:px-7">
-        {/* Heading row */}
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="text-[13px] font-semibold text-muted-foreground">Integration health</h2>
-        </div>
 
         {/* The situation — leads the hierarchy */}
         <div className="mt-3 flex items-center gap-2.5">

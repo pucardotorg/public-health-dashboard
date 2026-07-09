@@ -42,9 +42,9 @@ export default function SystemCard({ item, onOpen, index = 0 }) {
           {timed && item.since && <span className="text-[13px] tabular-nums text-muted-foreground">· since {clockIST(item.since)}</span>}
         </p>
 
-        {/* Consequence (broken) or capability (healthy). */}
+        {/* What the integration does — shown regardless of status. */}
         <p className={cn("mt-1 text-[13px] leading-snug", down ? "font-medium text-foreground" : "text-muted-foreground")}>
-          {down ? item.affects : item.capability}
+          {item.capability}
         </p>
       </div>
 

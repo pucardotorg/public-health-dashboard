@@ -108,7 +108,7 @@ export default function App() {
       <div className="min-h-full bg-background font-sans text-foreground">
         <div className="mx-auto max-w-6xl px-5 py-7 sm:px-8 sm:py-8">
           {/* Page title */}
-          <h1 className="text-[26px] font-bold leading-none tracking-tight sm:text-[28px]">Integration Status</h1>
+          <h1 className="text-[26px] font-bold leading-none tracking-tight sm:text-[28px]">Services Status</h1>
 
           {/* Role switcher */} 
           {/* Temporarily disabled until we have more than one role to show.

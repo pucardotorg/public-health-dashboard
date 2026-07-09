@@ -24,10 +24,30 @@ const AVAILABLE = new Set(["live", "unstable"]); // counts as a usable login cha
 
 /* ---- Roles / perspectives ---------------------------------------- */
 export const ROLES = [
-  { id: "all", label: "All", blurb: "Unfiltered — every integration.", depth: "full" },
-  { id: "advocate", label: "Advocate", blurb: "Public view — what's working and what to do.", depth: "public" },
-  { id: "staff", label: "Court staff", blurb: "Court-facing systems and workarounds.", depth: "public" },
-  { id: "internal", label: "Internal", blurb: "Internal ops view.", depth: "full" },
+  {
+    id: "all",
+    label: "All",
+    blurb: "Unfiltered — every integration.",
+    depth: "full",
+  },
+  {
+    id: "advocate",
+    label: "Advocate",
+    blurb: "Public view — what's working and what to do.",
+    depth: "public",
+  },
+  {
+    id: "staff",
+    label: "Court staff",
+    blurb: "Court-facing systems and workarounds.",
+    depth: "public",
+  },
+  {
+    id: "internal",
+    label: "Internal",
+    blurb: "Internal ops view.",
+    depth: "full",
+  },
 ];
 
 const ALL = ["all", "advocate", "staff", "internal"];
@@ -36,12 +56,54 @@ const COURT = ["all", "staff", "internal"];
 /* ---- Catalogue — display metadata for each known integration ------ *
  * Keyed by our internal id. `audience` = which perspectives see it. */
 export const SERVICES = [
-  { id: "epayment", name: "e-Payment", vendor: "e-Treasury", capability: "Court-fee payment & refunds", affects: "Blocks court-fee payment & refunds", needsAuth: true, audience: ALL },
-  { id: "sms", name: "SMS", vendor: "CDAC", capability: "Login OTP & mobile alerts", affects: "Blocks sign-in (SMS OTP) & alerts", needsAuth: false, audience: ALL },
-  { id: "email", name: "Email", vendor: "NIC", capability: "Login OTP & notifications", affects: "Blocks sign-in (Email OTP) & notices", needsAuth: false, audience: ALL },
-  { id: "esign", name: "e-Sign", vendor: "CDAC / CCA", capability: "Digital signing of documents", affects: "Blocks document signing & submission", needsAuth: true, audience: ALL },
-  { id: "aadhaar", name: "Aadhaar Auth", vendor: "UIDAI", capability: "e-KYC & ID verification", affects: "Blocks e-KYC & ID verification", needsAuth: false, audience: ALL },
-  { id: "icops", name: "iCOPS", vendor: "State Police", capability: "Summons / warrant delivery", affects: "Delays summons & warrant dispatch", needsAuth: false, audience: COURT },
+  {
+    id: "epayment",
+    name: "e-Payment",
+    vendor: "e-Treasury",
+    capability: "Online payments",
+    needsAuth: true,
+    audience: ALL,
+  },
+  {
+    id: "sms",
+    name: "SMS",
+    vendor: "CDAC",
+    capability: "Login OTP & mobile alerts",
+    needsAuth: false,
+    audience: ALL,
+  },
+  {
+    id: "email",
+    name: "Email",
+    vendor: "NIC",
+    capability: "Login OTP & notifications",
+    needsAuth: false,
+    audience: ALL,
+  },
+  {
+    id: "esign",
+    name: "e-Sign",
+    vendor: "CDAC / CCA",
+    capability: "Digital signing of documents",
+    needsAuth: true,
+    audience: ALL,
+  },
+  {
+    id: "aadhaar",
+    name: "Aadhaar Auth",
+    vendor: "UIDAI",
+    capability: "e-KYC & ID verification",
+    needsAuth: false,
+    audience: ALL,
+  },
+  {
+    id: "icops",
+    name: "iCoPS",
+    vendor: "State Police",
+    capability: "Digital warrants and summons",
+    needsAuth: false,
+    audience: COURT,
+  },
 ];
 
 export const SERVICE_BY_ID = Object.fromEntries(SERVICES.map((s) => [s.id, s]));
@@ -64,7 +126,14 @@ function fallbackMeta(id, apiServiceName) {
   const name = apiServiceName
     ? apiServiceName.charAt(0) + apiServiceName.slice(1).toLowerCase()
     : id;
-  return { id, name, vendor: null, capability: "External integration", affects: "This service is currently affected", needsAuth: false, audience: ALL };
+  return {
+    id,
+    name,
+    vendor: null,
+    capability: "External integration",
+    needsAuth: false,
+    audience: ALL,
+  };
 }
 
 export function getMeta(id, apiServiceName) {
@@ -81,43 +150,63 @@ export function visibleServices(role) {
 const COPY = {
   epayment: {
     down: {
-      impact: "Online court-fee payment and refunds are unavailable. The e-Treasury gateway is timing out for all incoming requests.",
+      impact: "You will not be able to make payments online",
       actions: [
-        { a: "user", t: "Please retry later; strictly avoid repeat attempts to prevent a double charge." },
-        { a: "team", t: "Check if the 14-day e-Treasury IP whitelisting has lapsed." },
+        {
+          a: "user",
+          t: "Please retry later; strictly avoid repeat attempts to prevent a double charge.",
+        },
+        {
+          a: "team",
+          t: "Check if the 14-day e-Treasury IP whitelisting has lapsed.",
+        },
       ],
     },
     unstable: {
       impact: "Some payments are timing out and need a retry.",
       actions: [
         { a: "user", t: "Retry once; don't re-submit repeatedly." },
-        { a: "team", t: "Watch the e-Treasury gateway; confirm the whitelisting window." },
+        {
+          a: "team",
+          t: "Watch the e-Treasury gateway; confirm the whitelisting window.",
+        },
       ],
     },
-    nodata: { impact: "We can't confirm e-Payment health right now.", actions: [{ a: "team", t: "Verify the monitor can reach e-Treasury." }] },
+    nodata: {
+      impact: "We can't confirm e-Payment health right now.",
+      actions: [{ a: "team", t: "Verify the monitor can reach e-Treasury." }],
+    },
   },
   sms: {
     down: {
-      impact: "SMS OTPs and alerts aren't going out. Anyone signing in by SMS can't receive a code.",
+      impact: "You will not receive SMS alerts and OTPs.",
       actions: [
         { a: "user", t: "Sign in using Email OTP instead." },
         { a: "team", t: "Ask the High Court to raise today's SMS limit." },
-        { a: "team", t: "Verify the DLT template and IP whitelisting with CDAC." },
+        {
+          a: "team",
+          t: "Verify the DLT template and IP whitelisting with CDAC.",
+        },
       ],
       note: "Daily-limit outages usually clear the next day.",
     },
     unstable: {
-      impact: "SMS OTPs are slow or intermittently dropping. Sign-in may need a retry or Email OTP.",
+      impact:
+        "SMS OTPs are slow or intermittently dropping. Sign-in may need a retry or Email OTP.",
       actions: [
         { a: "user", t: "If no SMS arrives, use Email OTP." },
         { a: "team", t: "Pre-empt the limit — request a raise with CDAC." },
       ],
     },
-    nodata: { impact: "We can't confirm SMS health right now. Treat SMS sign-in as uncertain.", actions: [{ a: "team", t: "Verify the monitor can reach CDAC." }] },
+    nodata: {
+      impact:
+        "We can't confirm SMS health right now. Treat SMS sign-in as uncertain.",
+      actions: [{ a: "team", t: "Verify the monitor can reach CDAC." }],
+    },
   },
   email: {
     down: {
-      impact: "Email OTPs and notifications aren't being delivered.",
+      impact: "You will not receive email alerts and OTPs.",
       actions: [
         { a: "user", t: "Sign in using SMS OTP instead." },
         { a: "team", t: "Verify NIC mail credentials after the migration." },
@@ -131,13 +220,20 @@ const COPY = {
         { a: "team", t: "Watch the NIC delivery queue post-migration." },
       ],
     },
-    nodata: { impact: "We can't confirm Email health right now. Treat Email sign-in as uncertain.", actions: [{ a: "team", t: "Verify the monitor can reach NIC." }] },
+    nodata: {
+      impact:
+        "We can't confirm Email health right now. Treat Email sign-in as uncertain.",
+      actions: [{ a: "team", t: "Verify the monitor can reach NIC." }],
+    },
   },
   esign: {
     down: {
-      impact: "Documents that need e-Sign can't be signed or submitted right now.",
+      impact: "You will not be able to e-sign your documents.",
       actions: [
-        { a: "user", t: "Save your draft — complete signing once it's restored." },
+        {
+          a: "user",
+          t: "Save your draft — complete signing once it's restored.",
+        },
         { a: "team", t: "Renew the e-Sign audit certificate (CDAC / CCA)." },
       ],
     },
@@ -148,42 +244,65 @@ const COPY = {
         { a: "team", t: "Check key / ASP-ID provisioning with CDAC." },
       ],
     },
-    nodata: { impact: "We can't confirm e-Sign health right now.", actions: [{ a: "team", t: "Verify the monitor can reach CDAC / CCA." }] },
+    nodata: {
+      impact: "We can't confirm e-Sign health right now.",
+      actions: [{ a: "team", t: "Verify the monitor can reach CDAC / CCA." }],
+    },
   },
   aadhaar: {
     down: {
       impact: "Aadhaar e-KYC and ID verification are unavailable.",
       actions: [
-        { a: "user", t: "Use an alternate accepted ID where the court permits." },
+        {
+          a: "user",
+          t: "Use an alternate accepted ID where the court permits.",
+        },
         { a: "team", t: "Check UIDAI ASA/KUA access and credentials." },
       ],
     },
     unstable: {
-      impact: "Aadhaar e-KYC is slow or intermittently failing; a retry usually works.",
+      impact:
+        "Aadhaar e-KYC is slow or intermittently failing; a retry usually works.",
       actions: [
         { a: "user", t: "Retry the verification." },
         { a: "team", t: "Watch UIDAI latency." },
       ],
     },
-    nodata: { impact: "We can't confirm Aadhaar health right now.", actions: [{ a: "team", t: "Verify the monitor can reach UIDAI." }] },
+    nodata: {
+      impact: "We can't confirm Aadhaar health right now.",
+      actions: [{ a: "team", t: "Verify the monitor can reach UIDAI." }],
+    },
   },
   icops: {
     down: {
-      impact: "Summons and warrants to police are delayed. This mostly affects case processing, not sign-in.",
+      impact: "You will not be able to send warrants to the police digitally.",
       actions: [
         { a: "team", t: "Re-queue the failed dispatches." },
         { a: "team", t: "Review validation errors with State Police IT." },
       ],
     },
     unstable: {
-      impact: "Some summons dispatches are failing validation and need re-sending.",
-      actions: [{ a: "team", t: "Re-queue failed dispatches; review with State Police IT." }],
+      impact:
+        "Some summons dispatches are failing validation and need re-sending.",
+      actions: [
+        {
+          a: "team",
+          t: "Re-queue failed dispatches; review with State Police IT.",
+        },
+      ],
     },
-    nodata: { impact: "We can't confirm iCOPS health right now; dispatch status is unknown.", actions: [{ a: "team", t: "Verify the monitor can reach the endpoint." }] },
+    nodata: {
+      impact:
+        "We can't confirm iCoPS health right now; dispatch status is unknown.",
+      actions: [{ a: "team", t: "Verify the monitor can reach the endpoint." }],
+    },
   },
 };
 
-const MAINTENANCE_COPY = { impact: "Planned maintenance window — a short interruption is expected.", actions: [] };
+const MAINTENANCE_COPY = {
+  impact: "Planned maintenance window — a short interruption is expected.",
+  actions: [],
+};
 
 /* ==================================================================
  * API → store mapping
@@ -202,11 +321,20 @@ const STATUS_MAP = {
 };
 
 export function normalizeStatus(apiStatus) {
-  return STATUS_MAP[String(apiStatus || "").toUpperCase().trim()] || "nodata";
+  return (
+    STATUS_MAP[
+      String(apiStatus || "")
+        .toUpperCase()
+        .trim()
+    ] || "nodata"
+  );
 }
 
 function slug(name) {
-  return String(name || "unknown").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  return String(name || "unknown")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
 }
 
 /* Build the store's `items` map from the raw API rows.
@@ -223,7 +351,8 @@ export function buildStore(apiRows, now = Date.now()) {
       since: null,
       lastChecked: row.lastUpdatedTime || now,
       apiMessage: row.message || null,
-      responseTimeMs: typeof row.responseTimeMs === "number" ? row.responseTimeMs : null,
+      responseTimeMs:
+        typeof row.responseTimeMs === "number" ? row.responseTimeMs : null,
       serviceUrl: row.serviceUrl || null,
       apiServiceName: apiName || null,
       apiId: row.id ?? null,
@@ -260,20 +389,33 @@ export function resolveItem(id, items, now) {
     impact = MAINTENANCE_COPY.impact;
   } else if (status !== "live") {
     const c = (COPY[id] && COPY[id][status]) || {};
-    impact = c.impact || meta.affects || "This service is currently unavailable.";
+    impact = c.impact || "This service is currently unavailable.";
     actions = (c.actions || []).map((a) => ({ ...a }));
     note = c.note || null;
   }
 
   // Cross-channel safety: if both OTP channels are down, don't suggest the other.
-  if ((id === "sms" || id === "email") && login.loginBlocked && status !== "live") {
+  if (
+    (id === "sms" || id === "email") &&
+    login.loginBlocked &&
+    status !== "live"
+  ) {
     actions = actions.filter((a) => a.a !== "user");
-    actions.unshift({ a: "user", t: "Sign-in is unavailable — both OTP channels are down. Try again shortly or contact support.", escalation: true });
+    actions.unshift({
+      a: "user",
+      t: "Sign-in is unavailable — both OTP channels are down. Try again shortly or contact support.",
+      escalation: true,
+    });
   }
 
   let cascade = null;
-  if (meta.needsAuth && login.loginBlocked && (status === "live" || status === "unstable")) {
-    cascade = "Sign-in is down, so OTP authentication for this service will also fail.";
+  if (
+    meta.needsAuth &&
+    login.loginBlocked &&
+    (status === "live" || status === "unstable")
+  ) {
+    cascade =
+      "Sign-in is down, so OTP authentication for this service will also fail.";
   }
 
   return {
@@ -308,10 +450,18 @@ export function overallVerdict(items, now, role) {
   const down = all.filter((x) => x.status === "down");
 
   if (all.length === 0) {
-    return { tone: "nodata", headline: "No integrations to show", detail: "There are no monitored services for this view yet." };
+    return {
+      tone: "nodata",
+      headline: "No integrations to show",
+      detail: "There are no monitored services for this view yet.",
+    };
   }
   if (login.loginBlocked) {
-    return { tone: "down", headline: "Sign-in unavailable", detail: "Both SMS and Email OTP are down, so users cannot sign in." };
+    return {
+      tone: "down",
+      headline: "Sign-in unavailable",
+      detail: "Both SMS and Email OTP are down, so users cannot sign in.",
+    };
   }
   if (down.length) {
     const s = down.length > 1 ? "s" : "";
@@ -321,5 +471,9 @@ export function overallVerdict(items, now, role) {
       detail: `${down.map((d) => d.name).join(", ")} unavailable and need immediate attention.`,
     };
   }
-  return { tone: "live", headline: "All systems operational", detail: "No incidents in the last few minutes." };
+  return {
+    tone: "live",
+    headline: "All systems operational",
+    detail: "No incidents in the last few minutes.",
+  };
 }
