@@ -34,16 +34,16 @@ npm run preview     # serve the build locally
 In production the app is served from a **sub-path** on the landing-page host:
 
 ```
-https://oncourts.kerala.gov.in/public-health-dashboard/
+https://oncourts.kerala.gov.in/health/
 ```
 
-So the build prefixes every asset URL with `/public-health-dashboard/`. This is
+So the build prefixes every asset URL with `/health/`. This is
 set once in [`vite.config.js`](vite.config.js) via Vite's `base` option:
 
 - **`npm run dev`** → served at `/` (root) for local convenience.
 - **Any build (`build` / `build:dev` / `build:uat` / `build:prod`) + `npm run preview`**
-  → served at `/public-health-dashboard/` (matches prod). Built `index.html`
-  references e.g. `src="/public-health-dashboard/assets/index-*.js"`.
+  → served at `/health/` (matches prod). Built `index.html`
+  references e.g. `src="/health/assets/index-*.js"`.
 
 > The API request stays origin-relative (`/health-dashboard/...`) — it is **not**
 > affected by this base path, since the API lives at the host root, not under the
