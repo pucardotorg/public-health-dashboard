@@ -6,16 +6,18 @@ import { fileURLToPath } from "url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 /* In production the app is served from a sub-path on the landing-page host
- * (https://oncourts.kerala.gov.in/public-health-dashboard/), so the build must
+ * (https://oncourts.kerala.gov.in/health/), so the build must
  * prefix every asset URL with that path. Dev keeps "/" for convenience;
  * `npm run preview` uses the real base so you can verify the prod path locally. */
-const BASE_PATH = "/public-health-dashboard/";
+const BASE_PATH = "/health/";
 
 export default defineConfig(({ command, mode }) => {
   // Load .env, .env.<mode>, .env.local … so we can read them here in config.
   const env = loadEnv(mode, process.cwd(), "");
-  const devApiTarget = env.VITE_DEV_API_TARGET || "https://dristi-kerala-dev.pucar.org";
-  const statusPath = env.VITE_HEALTH_STATUS_PATH || "/health-dashboard/v1/services/status";
+  const devApiTarget =
+    env.VITE_DEV_API_TARGET || "https://dristi-kerala-dev.pucar.org";
+  const statusPath =
+    env.VITE_HEALTH_STATUS_PATH || "/health-dashboard/v1/services/status";
   // Proxy the API's mount prefix (everything up to /v1) during local dev.
   const proxyPrefix = statusPath.split("/v1")[0] || "/health-dashboard";
 
