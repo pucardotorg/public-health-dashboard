@@ -1,4 +1,4 @@
-import { STATUS_UI, StatusDot, cn, relativeTime } from "@/lib/ui";
+import { STATUS_UI, StatusDot, cn } from "@/lib/ui";
 
 /* The overall verdict — the page's anchor. The situation leads (high
  * in the type hierarchy); a tone dot anchors it; the stacked bar gives
@@ -6,7 +6,7 @@ import { STATUS_UI, StatusDot, cn, relativeTime } from "@/lib/ui";
 
 const BAR_ORDER = ["down", "nodata", "unstable", "maintenance", "live"];
 
-export default function StatusHero({ verdict, items, now, lastChecked }) {
+export default function StatusHero({ verdict, items }) {
   const total = items.length;
   const counts = BAR_ORDER.map((s) => ({
     status: s,
@@ -16,15 +16,6 @@ export default function StatusHero({ verdict, items, now, lastChecked }) {
   return (
     <section className="animate-rise mt-6 rounded-xl border border-border bg-card">
       <div className="px-6 py-5 sm:px-7">
-        {/* Heading row */}
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="text-[13px] font-semibold text-muted-foreground">Integration health</h2>
-          {lastChecked != null && (
-            <span className="hidden text-[12px] tabular-nums text-muted-foreground sm:inline">
-              Updated {relativeTime(lastChecked, now)}
-            </span>
-          )}
-        </div>
 
         {/* The situation — leads the hierarchy */}
         <div className="mt-3 flex items-center gap-2.5">

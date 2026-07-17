@@ -1,4 +1,4 @@
-import { STATUS_UI, cn, relativeTime, clockIST } from "@/lib/ui";
+import { STATUS_UI, cn, clockIST, formatUpdatedAt } from "@/lib/ui";
 
 /* A monitored-system tile. Status leads the read — coloured label +
  * left rail, immediately legible (and red) when broken, without
@@ -13,7 +13,7 @@ const RAIL = {
   nodata: "before:bg-st-nodata",
 };
 
-export default function SystemCard({ item, now, onOpen, index = 0 }) {
+export default function SystemCard({ item, onOpen, index = 0 }) {
   const ui = STATUS_UI[item.status];
   const down = item.status === "down";
   const timed = item.status === "down" || item.status === "unstable";
@@ -39,17 +39,17 @@ export default function SystemCard({ item, now, onOpen, index = 0 }) {
         {/* Status — the lead. "since" makes the duration unambiguous. */}
         <p className="mt-3 flex items-baseline gap-1.5">
           <span className={cn("text-[15px] font-bold tracking-tight", ui.text)}>{ui.label}</span>
-          {timed && <span className="text-[13px] tabular-nums text-muted-foreground">· since {clockIST(item.since)}</span>}
+          {timed && item.since && <span className="text-[13px] tabular-nums text-muted-foreground">· since {clockIST(item.since)}</span>}
         </p>
 
-        {/* Consequence (broken) or capability (healthy). */}
+        {/* What the integration does — shown regardless of status. */}
         <p className={cn("mt-1 text-[13px] leading-snug", down ? "font-medium text-foreground" : "text-muted-foreground")}>
-          {down ? item.affects : item.capability}
+          {item.capability}
         </p>
       </div>
 
       <div className="flex items-center border-t border-border px-5 py-2.5">
-        <span className="text-[12px] tabular-nums text-muted-foreground">Checked {relativeTime(item.lastChecked, now)}</span>
+        <span className="text-[12px] tabular-nums text-muted-foreground">Last updated at {formatUpdatedAt(item.lastChecked)}</span>
       </div>
     </div>
   );

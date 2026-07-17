@@ -63,28 +63,20 @@ export function StatusBadge({ status, className }) {
 
 /* ---- Time helpers ------------------------------------------------ */
 const IST_FMT = new Intl.DateTimeFormat("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", hour12: true });
-const IST_DATE = new Intl.DateTimeFormat("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric" });
-const IST_TIME = new Intl.DateTimeFormat("en-IN", { timeZone: "Asia/Kolkata", hour: "2-digit", minute: "2-digit", hour12: false });
 const IST_CLOCK = new Intl.DateTimeFormat("en-IN", { timeZone: "Asia/Kolkata", hour: "numeric", minute: "2-digit", hour12: true });
+const IST_DATE_DMY = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Kolkata", day: "2-digit", month: "2-digit", year: "numeric" }); // DD/MM/YYYY
+const IST_TIME_12 = new Intl.DateTimeFormat("en-US", { timeZone: "Asia/Kolkata", hour: "numeric", minute: "2-digit", hour12: true }); // h:mm AM/PM
+const IST_DAYKEY = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit" }); // YYYY-MM-DD (for same-day check)
 
 export const absoluteIST = (ts) => `${IST_FMT.format(new Date(ts))} IST`;
-export const headerStamp = (ts) => `${IST_DATE.format(new Date(ts))} · ${IST_TIME.format(new Date(ts))} IST`;
 export const clockIST = (ts) => IST_CLOCK.format(new Date(ts)); // e.g. "9:08 am"
 
-export function relativeTime(ts, now) {
-  const mins = Math.floor(Math.max(0, now - ts) / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  return `${Math.floor(hrs / 24)}d ago`;
-}
-
-export function fmtDuration(ms) {
-  const mins = Math.floor(ms / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins} min`;
-  const hrs = Math.floor(mins / 60);
-  const rem = mins % 60;
-  return rem ? `${hrs}h ${rem}m` : `${hrs}h`;
+/* Absolute IST timestamp for "last updated". If the timestamp is from today,
+ * show the time only ("10:47 AM"); otherwise prefix the date ("29/06/2026 10:47 AM"). */
+export function formatUpdatedAt(ts, nowTs = Date.now()) {
+  if (ts == null) return "";
+  const d = new Date(ts);
+  const time = IST_TIME_12.format(d);
+  const sameDay = IST_DAYKEY.format(d) === IST_DAYKEY.format(new Date(nowTs));
+  return sameDay ? time : `${IST_DATE_DMY.format(d)} ${time}`;
 }
