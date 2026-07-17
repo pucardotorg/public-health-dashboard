@@ -20,7 +20,7 @@ const STATUS_PATH =
 export const HEALTH_STATUS_URL = `${API_BASE}${STATUS_PATH}`;
 
 /* How often the UI re-fetches the status while the page is open.
- * Default 5 minutes; override per environment with VITE_REFRESH_INTERVAL_MS.
+ * Default 3 minutes; override per environment with VITE_REFRESH_INTERVAL_MS.
  * Set to 0 to disable polling (fetch only on load). */
 export const REFRESH_INTERVAL_MS =
   Number(import.meta.env.VITE_REFRESH_INTERVAL_MS ?? 3 * 60 * 1000) || 0;
