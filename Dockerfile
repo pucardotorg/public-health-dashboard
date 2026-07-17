@@ -19,7 +19,7 @@ RUN npm run build
 # ---- Serve stage ----
 FROM nginx:mainline-alpine
 
-COPY --from=build /app/dist /usr/share/nginx/html/public-health-dashboard
+COPY --from=build /app/dist /usr/share/nginx/html/health
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # Expose the port that the app runs on
