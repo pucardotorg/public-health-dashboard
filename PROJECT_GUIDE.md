@@ -7,9 +7,10 @@ together.
 > **TL;DR** — A React dashboard that shows the **live** health of OnCourts'
 > external integrations (e-Payment, SMS, e-Sign, iCOPS, …). Statuses are fetched
 > from the backend health API (`src/lib/api.js`) and mapped onto display metadata
-> + authored guidance copy in `src/data/store.js`. It fetches on page load and
-> polls every 5 min (`VITE_REFRESH_INTERVAL_MS`), configured per environment
-> (dev/UAT/prod) via `.env` files.
+>
+> - authored guidance copy in `src/data/store.js`. It fetches on page load and
+>   polls every 5 min (`VITE_REFRESH_INTERVAL_MS`), configured per environment
+>   (dev/UAT/prod) via `.env` files.
 
 ---
 
@@ -24,10 +25,10 @@ a double charge").
 
 The work splits in two:
 
-| Part | Status | This repo |
-|---|---|---|
-| **Backend** polling service + status API | *live* (`/health-dashboard/v1/services/status`) | ❌ separate repo |
-| **Frontend** public status page (responsive) | *integrated with the live API* | ✅ **this repo** |
+| Part                                         | Status                                          | This repo        |
+| -------------------------------------------- | ----------------------------------------------- | ---------------- |
+| **Backend** polling service + status API     | _live_ (`/health-dashboard/v1/services/status`) | ❌ separate repo |
+| **Frontend** public status page (responsive) | _integrated with the live API_                  | ✅ **this repo** |
 
 The frontend fetches live status from the backend health API. It still **authors
 the display copy** (human-friendly names, capability/consequence lines, impact +
@@ -40,9 +41,15 @@ a short probe message.
 `GET {host}/health-dashboard/v1/services/status` → array of:
 
 ```json
-{ "id": 12, "serviceName": "ICOPS", "serviceUrl": "tcp://…:443",
-  "lastStatus": "DOWN", "lastUpdatedTime": 1783507511893,
-  "responseTimeMs": 11087, "message": "Connect timed out" }
+{
+  "id": 12,
+  "serviceName": "ICOPS",
+  "serviceUrl": "tcp://…:443",
+  "lastStatus": "DOWN",
+  "lastUpdatedTime": 1783507511893,
+  "responseTimeMs": 11087,
+  "message": "Connect timed out"
+}
 ```
 
 - `lastStatus` `UP`→Operational, `DOWN`→Down (also maps `DEGRADED`→Degraded,
@@ -51,7 +58,7 @@ a short probe message.
   (`TREASURY`→`epayment`, `ESIGN`→`esign`, `SMS`→`sms`, `ICOPS`→`icops`, …).
 - `lastUpdatedTime` is the last **poll** time, shown as an absolute IST time
   ("Last updated at 10:47 AM", or "… 29/06/2026 10:47 AM" if not today) via
-  `formatUpdatedAt()`. The API doesn't yet send an outage-*start* time, so cards
+  `formatUpdatedAt()`. The API doesn't yet send an outage-_start_ time, so cards
   don't show "since HH:MM" — when the backend adds it, populate `since` in
   `buildStore()` and it renders.
 
@@ -61,10 +68,10 @@ a short probe message.
   Degraded / Maintenance / No-data exist in the data model for the future.
 - **Snapshot only** — no historical uptime graphs; the current status is fetched
   on load and re-polled every 5 min.
-- **No action-blocking** — the dashboard never blocks payments/e-sign; it only *informs*.
+- **No action-blocking** — the dashboard never blocks payments/e-sign; it only _informs_.
 - **Perspectives** — All · Advocate · Court staff · Internal exist in the data model
   (`audience`), but the **"Viewing as" switcher is currently commented out in
-  `App.jsx`** (only *All* is shown) until there's more than one role worth
+  `App.jsx`** (only _All_ is shown) until there's more than one role worth
   exposing. Re-enable by uncommenting the block — the logic still works.
 
 ---
@@ -81,14 +88,14 @@ graph LR
     B --> G["Node 22 LTS<br/>runtime"]
 ```
 
-| Layer | Choice | Why |
-|---|---|---|
-| Framework | **React 19** | Latest; hooks-only, no class components. |
-| Build tool | **Vite 6** | Fast dev server + HMR; simple config. |
-| Styling | **Tailwind CSS 3.4** | Utility-first; design tokens map 1:1 to the Figma handover. |
-| Primitives | **Radix UI** | Accessible, unstyled dialog/toggle/tooltip (the shadcn/ui pattern). |
-| Icons | **lucide-react** | Clean, tree-shakeable SVG icons. |
-| Runtime | **Node 22 LTS** | Required by Vite 6 (Node 18+). |
+| Layer      | Choice               | Why                                                                 |
+| ---------- | -------------------- | ------------------------------------------------------------------- |
+| Framework  | **React 19**         | Latest; hooks-only, no class components.                            |
+| Build tool | **Vite 6**           | Fast dev server + HMR; simple config.                               |
+| Styling    | **Tailwind CSS 3.4** | Utility-first; design tokens map 1:1 to the Figma handover.         |
+| Primitives | **Radix UI**         | Accessible, unstyled dialog/toggle/tooltip (the shadcn/ui pattern). |
+| Icons      | **lucide-react**     | Clean, tree-shakeable SVG icons.                                    |
+| Runtime    | **Node 22 LTS**      | Required by Vite 6 (Node 18+).                                      |
 
 > **Why Tailwind v3.4 and not v4?** v3.4's `tailwind.config.js` token model maps
 > directly to the handover's colour variables, guaranteeing pixel fidelity. A v4
@@ -132,7 +139,7 @@ flowchart LR
 ## 4. Directory structure
 
 ```
-public-health-dashboard/
+health/
 ├── index.html                 # HTML shell; loads Noto Sans font + main.jsx
 ├── package.json               # deps + scripts
 ├── vite.config.js             # Vite + the "@" → "src" path alias
@@ -189,7 +196,7 @@ graph TD
 
 **The key idea:** components are dumb renderers. Live status enters through
 `api.js`, is shaped by `store.js`, and `App.jsx` holds the current selections.
-The API supplies *status*; `store.js` supplies the *words* around it.
+The API supplies _status_; `store.js` supplies the _words_ around it.
 
 ---
 
@@ -201,7 +208,7 @@ response onto it, and derives what the UI shows.
 ### 5.1 Status taxonomy
 
 ```js
-STATUS = { live, maintenance, unstable, nodata, down }   // each has a `rank`
+STATUS = { live, maintenance, unstable, nodata, down }; // each has a `rank`
 ```
 
 `rank` drives sort order (most severe first). The backend currently sends only
@@ -227,14 +234,14 @@ graph LR
 
 Six monitored integrations. Each row declares its metadata:
 
-| id | name | vendor | needsAuth | audience |
-|---|---|---|---|---|
-| `epayment` | e-Payment | e-Treasury | ✅ | everyone |
-| `sms` | SMS | CDAC | — | everyone |
-| `email` | Email | NIC | — | everyone |
-| `esign` | e-Sign | CDAC / CCA | ✅ | everyone |
-| `aadhaar` | Aadhaar Auth | UIDAI | — | everyone |
-| `icops` | iCOPS | State Police | — | court only |
+| id         | name         | vendor       | needsAuth | audience   |
+| ---------- | ------------ | ------------ | --------- | ---------- |
+| `epayment` | e-Payment    | e-Treasury   | ✅        | everyone   |
+| `sms`      | SMS          | CDAC         | —         | everyone   |
+| `email`    | Email        | NIC          | —         | everyone   |
+| `esign`    | e-Sign       | CDAC / CCA   | ✅        | everyone   |
+| `aadhaar`  | Aadhaar Auth | UIDAI        | —         | everyone   |
+| `icops`    | iCOPS        | State Police | —         | court only |
 
 - **`audience`** controls role visibility — `icops` is court-only, so Advocates never see it.
 - **`needsAuth`** means "this service needs OTP login to work" — used to show a
@@ -265,7 +272,7 @@ items.icops = { status:"down", since:null, lastChecked:lastUpdatedTime,
 
 - Unknown `serviceName`s get a slug id + fallback metadata, so a new backend
   service still renders (just without authored copy) instead of breaking.
-- `since` is `null` (the API sends last-*poll* time, not outage-*start*).
+- `since` is `null` (the API sends last-_poll_ time, not outage-_start_).
 
 ### 5.5 Selectors — deriving what the UI shows
 
@@ -336,15 +343,15 @@ flowchart LR
 
 ### Fetch behaviour & interactions
 
-| Thing | How it works |
-|---|---|
-| **Load** | fetches on mount; `phase = "loading"` → spinner until the first response. |
-| **Polling** | re-fetches every `REFRESH_INTERVAL_MS` (default 5 min, from `VITE_REFRESH_INTERVAL_MS`) while the page is open; `setInterval` cleared + in-flight request aborted on unmount. |
-| **Poll fails** | keeps the last good data (stays `ready`); a full-page error + **Try again** shows only if the *first* load failed (no data yet). |
-| **Timestamps** | each card's "Last updated at &lt;time&gt;" (from `lastUpdatedTime`) is absolute IST via `formatUpdatedAt()` — no relative "…ago", no ticking clock. |
-| **Viewing as** pills | `setRoleId` — changes which services are visible (by `audience`). *Currently commented out in `App.jsx`; `roleId` stays `"all"`.* |
-| **Filter pills / search** | `setFilter` / `setQuery` — narrows the grid client-side. |
-| **Click a card** | `setOpenId` — opens the detail drawer. |
+| Thing                     | How it works                                                                                                                                                                  |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Load**                  | fetches on mount; `phase = "loading"` → spinner until the first response.                                                                                                     |
+| **Polling**               | re-fetches every `REFRESH_INTERVAL_MS` (default 5 min, from `VITE_REFRESH_INTERVAL_MS`) while the page is open; `setInterval` cleared + in-flight request aborted on unmount. |
+| **Poll fails**            | keeps the last good data (stays `ready`); a full-page error + **Try again** shows only if the _first_ load failed (no data yet).                                              |
+| **Timestamps**            | each card's "Last updated at &lt;time&gt;" (from `lastUpdatedTime`) is absolute IST via `formatUpdatedAt()` — no relative "…ago", no ticking clock.                           |
+| **Viewing as** pills      | `setRoleId` — changes which services are visible (by `audience`). _Currently commented out in `App.jsx`; `roleId` stays `"all"`._                                             |
+| **Filter pills / search** | `setFilter` / `setQuery` — narrows the grid client-side.                                                                                                                      |
+| **Click a card**          | `setOpenId` — opens the detail drawer.                                                                                                                                        |
 
 > There is intentionally **no public "refresh" or "re-check" button** — per the
 > ticket, a user-triggered refresh could be spammed. Freshness comes from the
@@ -408,9 +415,12 @@ The `STATUS_UI` map in `lib/ui.jsx` is the single source that ties a status id t
 its label + Tailwind classes:
 
 ```js
-STATUS_UI.down = { label: "Down", text: "text-st-down",
-                   badge: "border-st-down-bd bg-st-down-bg text-st-down",
-                   dot: "bg-st-down" }
+STATUS_UI.down = {
+  label: "Down",
+  text: "text-st-down",
+  badge: "border-st-down-bd bg-st-down-bg text-st-down",
+  dot: "bg-st-down",
+};
 ```
 
 ---
@@ -428,6 +438,7 @@ STATUS_UI.down = { label: "Down", text: "text-st-down",
 ## 10. How to extend
 
 ### Add a new integration
+
 1. Backend starts returning it in the status array (new `serviceName`).
 2. Add the API→id mapping in `SERVICE_ID_BY_API` and a row in `SERVICES`
    (id, name, vendor, capability, audience) in `store.js`.
@@ -436,10 +447,12 @@ STATUS_UI.down = { label: "Down", text: "text-st-down",
    fallback name and no guidance, so it never breaks the page.)
 
 ### Point at a different backend / environment
+
 - Edit the `.env.*` file for that environment (`VITE_API_BASE_URL`,
   `VITE_HEALTH_STATUS_PATH`, `VITE_REFRESH_INTERVAL_MS`). See §3 and the README.
 
 ### Likely next backend-driven features
+
 - **Outage start time** — when the API adds it, set `since` in `buildStore()`;
   the "since HH:MM" line and drawer timing light up automatically.
 - **Degraded/maintenance** — already mapped in `normalizeStatus`; the moment the
@@ -476,20 +489,23 @@ STATUS_UI.down = { label: "Down", text: "text-st-down",
 
 ## 12. Quick reference — where do I change…?
 
-| I want to change… | File |
-|---|---|
-| Which backend / environment it calls | `.env.*` (`VITE_API_BASE_URL`, `VITE_HEALTH_STATUS_PATH`) |
-| The API request/parsing | `src/lib/api.js` |
-| API status/name → UI mapping | `src/data/store.js` → `SERVICE_ID_BY_API`, `normalizeStatus`, `buildStore` |
-| The impact text or user guidance | `src/data/store.js` → `COPY` |
-| A service's name/vendor/visibility | `src/data/store.js` → `SERVICES` |
-| Status label or colour | `src/lib/ui.jsx` (`STATUS_UI`) + `src/index.css` (tokens) |
-| The overall headline logic | `src/data/store.js` → `overallVerdict` |
-| Poll interval | `.env` (`VITE_REFRESH_INTERVAL_MS`, default 5 min) / `src/lib/api.js` |
-| Loading & error UI / fetch behaviour | `src/App.jsx` |
-| Local dev proxy target | `.env.development` (`VITE_DEV_API_TARGET`) + `vite.config.js` |
-| A card's look | `src/components/SystemCard.jsx` |
-| The detail panel | `src/components/DetailDrawer.jsx` |
-| Theme colours / fonts | `src/index.css` + `tailwind.config.js` |
-| The "Report a problem" link | `src/components/DetailDrawer.jsx` (`REPORT_URL`) |
+| I want to change…                    | File                                                                       |
+| ------------------------------------ | -------------------------------------------------------------------------- |
+| Which backend / environment it calls | `.env.*` (`VITE_API_BASE_URL`, `VITE_HEALTH_STATUS_PATH`)                  |
+| The API request/parsing              | `src/lib/api.js`                                                           |
+| API status/name → UI mapping         | `src/data/store.js` → `SERVICE_ID_BY_API`, `normalizeStatus`, `buildStore` |
+| The impact text or user guidance     | `src/data/store.js` → `COPY`                                               |
+| A service's name/vendor/visibility   | `src/data/store.js` → `SERVICES`                                           |
+| Status label or colour               | `src/lib/ui.jsx` (`STATUS_UI`) + `src/index.css` (tokens)                  |
+| The overall headline logic           | `src/data/store.js` → `overallVerdict`                                     |
+| Poll interval                        | `.env` (`VITE_REFRESH_INTERVAL_MS`, default 5 min) / `src/lib/api.js`      |
+| Loading & error UI / fetch behaviour | `src/App.jsx`                                                              |
+| Local dev proxy target               | `.env.development` (`VITE_DEV_API_TARGET`) + `vite.config.js`              |
+| A card's look                        | `src/components/SystemCard.jsx`                                            |
+| The detail panel                     | `src/components/DetailDrawer.jsx`                                          |
+| Theme colours / fonts                | `src/index.css` + `tailwind.config.js`                                     |
+| The "Report a problem" link          | `src/components/DetailDrawer.jsx` (`REPORT_URL`)                           |
+
+```
+
 ```
