@@ -402,15 +402,20 @@ export function resolveItem(id, items, now) {
   }
 
   // Cross-channel safety: if both OTP channels are down, don't suggest the other.
-  if (
-    (id === "sms" || id === "email") &&
-    login.loginBlocked &&
-    status !== "live"
-  ) {
+  if (id === "sms" && login.loginBlocked && status !== "live") {
     actions = actions.filter((a) => a.a !== "user");
     actions.unshift({
       a: "user",
       t: "Sign-in is unavailable — both OTP channels are down. Try again shortly or contact support.",
+      escalation: true,
+    });
+  }
+
+  if (id === "email" && login.loginBlocked && status !== "live") {
+    actions = actions.filter((a) => a.a !== "user");
+    actions.unshift({
+      a: "user",
+      t: "Please be aware that you might not receive email updates about your case. If you are trying to log in to your account, please use SMS OTP.",
       escalation: true,
     });
   }
