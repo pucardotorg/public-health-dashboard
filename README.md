@@ -8,7 +8,8 @@ tracked in [dristi#5807](https://github.com/pucardotorg/dristi/issues/5807).
 > [`src/lib/api.js`](src/lib/api.js) and the response→UI mapping lives in
 > [`src/data/store.js`](src/data/store.js). Display copy (impact text, guidance,
 > which perspective sees a service) is authored in `store.js`; live status,
-> timestamps and probe messages come from the API.
+> timestamps and response times come from the API. The probe's raw message is
+> **never shown** — no diagnostic text is surfaced on the page at all.
 
 ## Stack
 
@@ -100,8 +101,11 @@ develop ──build:dev──▶ DEV
   shows **"Last updated at &lt;time&gt;"** for that service (absolute IST — time
   only if today, else `DD/MM/YYYY h:mm AM/PM`).
 - **Detail drawer** — opens on card click: status badge, "Last updated at",
-  plain-language impact, "What you can do", the live probe **"Last check"** message
-  (+ response time), and **Report a problem**.
+  plain-language impact, "What you can do", and **Report a problem**.
+- **No internal detail in the UI** — the probe's raw message (stack traces,
+  hostnames, ports) never reaches the browser: `buildStore` drops it and the
+  drawer shows no diagnostic text. Users get the authored impact copy and
+  "What you can do" guidance instead.
 - **Responsive** — three-column desktop grid collapses to a single-column mobile list.
 - **Accessibility** — status conveyed by label + colour + position (never colour
   alone), visible borders, keyboard-operable cards, focus rings.
