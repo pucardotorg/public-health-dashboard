@@ -65,17 +65,6 @@ export default function DetailDrawer({ open, item, onOpenChange }) {
                   </ul>
                 </section>
               )}
-
-              {/* Live probe detail straight from the backend health check. */}
-              {data.diagnostic && (
-                <section className="mt-6 border-t border-border pt-4">
-                  <p className="text-[12.5px] font-semibold text-muted-foreground">Last check</p>
-                  <p className="mt-1.5 font-mono text-[12.5px] leading-relaxed text-muted-foreground">
-                    {data.diagnostic}
-                    {typeof data.responseTimeMs === "number" && ` · ${data.responseTimeMs} ms`}
-                  </p>
-                </section>
-              )}
             </div>
 
             <SheetFooter className="flex-row items-center gap-2 border-t px-6 py-4">

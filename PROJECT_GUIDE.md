@@ -33,8 +33,8 @@ The work splits in two:
 The frontend fetches live status from the backend health API. It still **authors
 the display copy** (human-friendly names, capability/consequence lines, impact +
 "what you can do" guidance, and which perspective sees each service) in
-`src/data/store.js` — the API only supplies status, timestamps, response time and
-a short probe message.
+`src/data/store.js` — the API only supplies status, timestamps and response time.
+Its raw probe `message` is dropped (see "No diagnostic text in the UI" below).
 
 ### Live API contract
 
@@ -267,12 +267,22 @@ API row  { serviceName:"ICOPS", lastStatus:"DOWN", lastUpdatedTime, responseTime
    │  SERVICE_ID_BY_API["ICOPS"] → "icops"   ·   normalizeStatus("DOWN") → "down"
    ▼
 items.icops = { status:"down", since:null, lastChecked:lastUpdatedTime,
-                apiMessage, responseTimeMs, serviceUrl, apiServiceName, apiId }
+                responseTimeMs, serviceUrl, apiServiceName, apiId }
 ```
 
 - Unknown `serviceName`s get a slug id + fallback metadata, so a new backend
   service still renders (just without authored copy) instead of breaking.
 - `since` is `null` (the API sends last-_poll_ time, not outage-_start_).
+
+#### No diagnostic text in the UI
+
+The probe `message` can contain stack traces, hostnames and ports — e.g.
+`MailConnectException: Couldn't connect to host, port: mail.…, 587`. That must
+never reach a public page, so **`buildStore` never stores it** and nothing
+renders it: the drawer shows no "Last check" diagnostic at all. What a user sees
+on a failure is the authored `impact` copy and "What you can do" guidance from
+`COPY`. **If you add new fields from the API, keep raw diagnostic text out of
+the store.**
 
 ### 5.5 Selectors — deriving what the UI shows
 
@@ -382,8 +392,7 @@ graph TD
   tint. Footer shows **"Last updated at &lt;time&gt;"** (absolute IST) for that service.
 - **`DetailDrawer.jsx`** — a Radix Dialog rendered as a right-side **Sheet**
   (full-screen on mobile). Shows status badge, "Last updated at", plain-language
-  impact, optional cascade/note, "What you can do", the live probe **"Last check"**
-  message (+ response time), and **Report a problem**.
+  impact, optional cascade/note, "What you can do", and **Report a problem**.
 - **`components/ui/*`** — the shadcn/ui-style Radix primitives. You rarely touch
   these; they're the accessible building blocks (`Button`, `Sheet`,
   `ToggleGroup`, `Tooltip`).

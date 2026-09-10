@@ -345,7 +345,7 @@ function slug(name) {
 }
 
 /* Build the store's `items` map from the raw API rows.
- * items[internalId] = { status, since, lastChecked, apiMessage, responseTimeMs, serviceUrl, apiServiceName, apiId } */
+ * items[internalId] = { status, since, lastChecked, responseTimeMs, serviceUrl, apiServiceName, apiId } */
 export function buildStore(apiRows, now = Date.now()) {
   const items = {};
   for (const row of apiRows || []) {
@@ -357,7 +357,8 @@ export function buildStore(apiRows, now = Date.now()) {
       // Keep `since` null until the backend provides an outage-start timestamp.
       since: null,
       lastChecked: row.lastUpdatedTime || now,
-      apiMessage: row.message || null,
+      // The probe's `message` is deliberately dropped: it carries stack traces,
+      // hostnames and ports, and is never shown on this public page.
       responseTimeMs:
         typeof row.responseTimeMs === "number" ? row.responseTimeMs : null,
       serviceUrl: row.serviceUrl || null,
@@ -440,8 +441,6 @@ export function resolveItem(id, items, now) {
     actions,
     note,
     cascade,
-    // Live diagnostic signal straight from the probe.
-    diagnostic: rec.apiMessage,
     responseTimeMs: rec.responseTimeMs,
     serviceUrl: rec.serviceUrl,
   };
