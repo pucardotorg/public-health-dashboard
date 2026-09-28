@@ -11,6 +11,10 @@ together.
 > - authored guidance copy in `src/data/store.js`. It fetches on page load and
 >   polls every 5 min (`VITE_REFRESH_INTERVAL_MS`), configured per environment
 >   (dev/UAT/prod) via `.env` files.
+>
+> - authored guidance copy in `src/data/store.js`. It fetches on page load and
+>   polls every 5 min (`VITE_REFRESH_INTERVAL_MS`), configured per environment
+>   (dev/UAT/prod) via `.env` files.
 
 ---
 
